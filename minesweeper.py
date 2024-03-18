@@ -17,6 +17,14 @@ if TYPE_CHECKING:
 
     BoardT = list[list[int]]
 
+__all__ = [
+    "MinesweeperConfig",
+    "Minesweeper",
+    "Play",
+    "GameOver",
+    "PlayType",
+]
+
 
 @dataclass
 class MinesweeperConfig:
