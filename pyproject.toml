@@ -1,6 +1,6 @@
 [project]
 name = "minesweeper"
-version = "0.0.3"
+version = "0.0.4"
 requires-python = ">=3.8"
 authors = [{ name = "AiroPi", email = "pi@airopi.dev" }]
 description = "A python minesweeper."
@@ -16,8 +16,11 @@ Issues = "https://github.com/airopi/minesweeper/issues"
 requires = ["hatchling", "hatch-requirements-txt"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build.targets.sdist]
-include = ["minesweeper.py", "py.typed"]
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[tool.hatch.build.targets.wheel]
+exclude = ["test_*.py"]
 
 [tool.tox]
 legacy_tox_ini = """
@@ -96,6 +99,3 @@ skip-magic-trailing-comma = false
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-
-[tool.hatch.metadata.hooks.requirements_txt]
-files = ["requirements.txt"]
