@@ -1,0 +1,99 @@
+[project]
+name = "minesweeper"
+version = "0.1"
+requires-python = ">=3.8"
+authors = [{ name = "AiroPi", email = "pi@airopi.dev" }]
+description = "A python minesweeper."
+readme = "README.md"
+classifiers = []
+dynamic = ["dependencies", "optional-dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/airopi/minesweeper"
+Issues = "https://github.com/airopi/minesweeper/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+env_list = py{38,39,310,311,312}
+
+[testenv]
+deps =
+    -r requirements.txt
+    -r requirements.dev.txt
+commands =
+    pytest
+    ruff format --check minesweeper.py
+    ruff check minesweeper.py
+    pyright minesweeper.py
+"""
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py38"
+src = ["src"]
+exclude = ["bin/msgfmt.py", "alembic/**"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle Error
+    "F",     # pyflakes
+    "UP",    # pyupgrade
+    "SIM",   # flake8-simplify
+    "I",     # imports
+    "S",     # bandit (security)
+    "N",     # pep8-naming
+    "ASYNC", # flake8-async
+    "C4",    # flake8-compehensions
+    "FA",    # flake8-future-annotations
+    "ISC",   # flake8-implicit-str-concat
+    "ICN",   # flake8-import-conventions
+    "G",     # flake8-logging-format
+    "PIE",   # flake8-pie
+    "PYI",   # flake8-pyi
+    "RSE",   # flake8-raise
+    "SLOT",  # flake8-slots
+    "INT",   # flake8-gettext
+    "TRY",   # tryceratops
+    "FLY",   # flynt
+    "PERF",  # Perflint
+    "FURB",  # refurb
+    "LOG",   # flake8-logging
+    "RUF",   # Ruff-specific-rules
+    # "ERA",   # locate commented codes
+    # "FIX",   # locate TODOs and FIXME
+    # "PTH",   # flake8-use-pathlib (maybe todo ?)
+    # "TID",   # flake8-tidy-imports (maybe todo ?)
+    # "SLF",   # flake8-self  (managed by pyright)
+    # "RET",   # flake8-return
+    # "Q",     # flake8-quotes
+    # "T20",   # flake8-print
+    # "DTZ",   # flake8-datetimez (TODO)
+    # "B",     # flake8-bugbear
+]
+
+ignore = [
+    "E501",   # line too long (we relate on the formater)
+    "N818",   # Error suffix for exceptions names
+    "PIE796", # Enum contains duplicate value
+    "TRY003", # Avoid specifying long messages outsides the exception class
+    "ISC001", # To avoid conflicts with the formatter
+]
+dummy-variable-rgx = '^\*{0,2}(_$|__$|unused_|dummy_)'
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.in"] }
+optional-dependencies.dev = { file = ["requirements.dev.in"] }
