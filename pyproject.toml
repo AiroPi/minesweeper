@@ -37,6 +37,14 @@ commands =
     ruff format --check minesweeper.py
     ruff check minesweeper.py
     pyright minesweeper.py
+
+[gh]
+python =
+    3.12 = py312
+    3.11 = py311
+    3.10 = py310
+    3.9 = py39
+    3.8 = py38
 """
 
 [tool.ruff]
