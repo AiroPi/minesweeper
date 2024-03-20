@@ -7,14 +7,7 @@ from enum import Enum, auto
 from itertools import chain, permutations
 from typing import TYPE_CHECKING, cast
 
-from typing_extensions import TypeAlias
-
 if TYPE_CHECKING:
-    Height: TypeAlias = int
-    Width: TypeAlias = int
-    Row: TypeAlias = int
-    Column: TypeAlias = int
-
     BoardT = list[list[int]]
 
 __all__ = [
@@ -28,14 +21,33 @@ __all__ = [
 
 @dataclass
 class MinesweeperConfig:
+    """A minesweeper config generator.
+
+    Example:
+        ```py
+        config = MinesweeperConfig(
+            height=10,
+            width=10,
+            number_of_mines=10
+        )
+        game = Minesweeper.from_config(config)
+        ```
+
+    Args:
+        height: the height of the board
+        width: the width of the board
+        number_of_mines: the number of mines to add in the board
+        initial_play: the first play, to ensure there is no mine here
+    """
+
     height: int
     width: int
     number_of_mines: int
-    initial_play: tuple[Row, Column] | None = None
+    initial_play: tuple[int, int] | None = None
 
 
 class GameOver(Exception):
-    pass
+    """You tried to play while the game is over."""
 
 
 class PlayType(Enum):
@@ -48,101 +60,182 @@ class PlayType(Enum):
 @dataclass
 class Play:
     type: PlayType
-    positions: tuple[tuple[Row, Column], ...]
+    positions: tuple[tuple[int, int], ...]
 
 
 class Minesweeper:
     def __init__(
         self,
-        size: tuple[Height, Width],
+        size: tuple[int, int],
         number_of_mines: int,
-        initial_play: tuple[Row, Column] | None = None,
+        initial_play: tuple[int, int] | None = None,
     ):
-        self.size: tuple[Height, Width] = size
-        self.number_of_mines: int = number_of_mines
+        self._size: tuple[int, int] = size
+        self._mines_nb: int = number_of_mines
 
-        self.revealed: list[tuple[Height, Width]] = []
-        self.flags: list[tuple[Height, Width]] = []
-        self.game_over: bool = False
-        self._board: BoardT = self.create_board(initial_play)
-        if initial_play is not None:
-            self.play(*initial_play)
+        self.new(initial_play)
 
     @classmethod
     def from_config(cls, config: MinesweeperConfig):
+        """Init a Minesweeper from a MinesweeperConfig
+
+        Args:
+            config: the configuration to use
+
+        Returns:
+            A new Minesweeper instance.
+        """
         return cls((config.height, config.width), config.number_of_mines, config.initial_play)
 
     @property
+    def size(self) -> tuple[int, int]:
+        """Get the size of the board. Can't be changed.
+
+        Returns:
+            (height, width)
+        """
+        return self._size
+
+    @property
+    def number_of_mines(self) -> int:
+        """Get the number of mines."""
+        return self._mines_nb
+
+    @property
+    def remaining_mines(self) -> int:
+        """The number of un-flagged mines. Don't care if the flags are right or not. Can be negative"""
+        return self._mines_nb - len(self.flags)
+
+    @property
     def board(self) -> BoardT:
+        """A matrix representing the board.
+
+        The board is represented as a matrix of digits.
+        The digits can be -1 for a mine, 0 for no mines around, 1 for one mine around... until 8.
+
+        Example:
+            ```py
+            [[ 1, -1,  2, -1,  1],
+             [ 1,  1,  2,  2,  2],
+             [ 0,  0,  0,  1, -1],
+             [ 0,  0,  1,  3,  3],
+             [ 0,  0,  1, -1, -1]]
+            ```
+        """
         return self._board
 
     @property
-    def positions(self) -> set[tuple[Height, Width]]:
-        return {(x, y) for x in range(self.size[0]) for y in range(self.size[1])}
+    def mines_positions(self) -> set[tuple[int, int]]:
+        """The positions of the mines.
 
-    @property
-    def mines_positions(self) -> set[tuple[Height, Width]]:
-        return {(x, y) for x in range(self.size[0]) for y in range(self.size[1]) if self._board[x][y] == -1}
+        Mines positions are stored as a set of coordinates represented as (row, column).
 
-    def is_inside(self, x: int, y: int) -> bool:
-        return 0 <= x < self.size[0] and 0 <= y < self.size[1]
+        Example:
+            ```py
+            {(0, 1), (4, 4), (2, 4), (4, 3), (0, 3)}
+            ```
+        """
+        return {(x, y) for x in range(self._size[0]) for y in range(self._size[1]) if self._board[x][y] == -1}
 
-    def add_flag(self, x: int, y: int) -> None:
-        if (x, y) in self.revealed:
-            return
-        self.flags.append((x, y))
+    def new(self, initial_play: tuple[int, int] | None = None):
+        """Create a new game, within the same configuration than provided at definition.
 
-    def play(self, x: int, y: int) -> Play:
-        """Play the game at the given position. Return False if a bomb is found."""
+        Args:
+            initial_play: a position that will be pre-played, ensuring no mine is here.
+        """
+        self.revealed: list[tuple[int, int]] = []
+        self.flags: list[tuple[int, int]] = []
+        self._board: BoardT = self._create_board(initial_play)
+        if initial_play is not None:
+            self.play(*initial_play)
+
+    def _is_inside(self, x: int, y: int) -> bool:
+        return 0 <= x < self._size[0] and 0 <= y < self._size[1]
+
+    def toggle_flag(self, row: int, column: int) -> None:
+        """Toggle the presence of a flag on a position.
+
+        Raises:
+            ValueError: if the given position is out of bounds
+
+        Args:
+            row: the row to toggle the flag at
+            column: the column to toggle the flag at
+        """
+        if not self._is_inside(row, column):
+            raise ValueError("Position out of bounds.")
+
+        if (row, column) in self.revealed:
+            self.flags.remove((row, column))
+        self.flags.append((row, column))
+
+    def play(self, row: int, column: int) -> Play:
+        """Play at the given position.
+
+        If the position contains a flag, it is ignored.
+        If the position is already revealed, it will chord if possible.
+
+        Chord only occur when the number of flags around is greater than the value of the position.
+
+        Args:
+            row: the row to play at
+            column: the column to play at
+
+        Raises:
+            GameOver: if you try to play on a overed game
+            ValueError: if the given position is out of bounds
+
+        Returns:
+            A `Play` object.
+        """
         if self.game_over:
             raise GameOver("The game is over.")
 
-        if not self.is_inside(x, y):
+        if not self._is_inside(row, column):
             raise ValueError("The given position is out of the board.")
 
-        if (x, y) in self.mines_positions:
+        if (row, column) in self.mines_positions:
             self.game_over = True
-            self.revealed.append((x, y))
-            return Play(PlayType.BOMB_EXPLODED, ((x, y),))
+            self.revealed.append((row, column))
+            return Play(PlayType.BOMB_EXPLODED, ((row, column),))
 
-        if (x, y) in self.revealed:
-            return Play(PlayType.ALREADY_REVEALED, ((x, y),))
+        if (row, column) in self.revealed:
+            return Play(PlayType.ALREADY_REVEALED, ((row, column),))
 
-        if self._board[x][y] == 0:
-            positions = self.diffuse_empty_places(x, y)
+        if self._board[row][column] == 0:
+            positions = self._spread_empty(row, column)
             return Play(PlayType.EMPTY_SPOT, positions)
         else:
-            self.revealed.append((x, y))
-            return Play(PlayType.NUMBERED_SPOT, ((x, y),))
+            self.revealed.append((row, column))
+            return Play(PlayType.NUMBERED_SPOT, ((row, column),))
 
-    def diffuse_empty_places(self, x: int, y: int, is_corner: bool = False) -> tuple[tuple[Row, Column], ...]:
-        """Diffuse the empty place at the given position. This function is recursive."""
-        if (x, y) in self.revealed or not self.is_inside(x, y):
+    def _spread_empty(self, row: int, column: int) -> tuple[tuple[int, int], ...]:
+        if (row, column) in self.revealed or not self._is_inside(row, column):
             return ()
 
-        self.revealed.append((x, y))
+        self.revealed.append((row, column))
 
-        if self._board[x][y] == 0:
-            gen: Iterable[tuple[int, int]] = cast(
-                Iterable[tuple[int, int]], chain(permutations(range(-1, 2, 1), 2), ((1, 1), (-1, -1)))
-            )
+        if self._board[row][column] == 0:
+            # This generate 8 tuples that represent the relative distance from the position with its adjacent positions.
+            # (-1, -1), (-1, 0), (-1, 1)...
+            gen = cast(Iterable[tuple[int, int]], chain(permutations(range(-1, 2, 1), 2), ((1, 1), (-1, -1))))
             return (
-                (x, y),
-                *tuple(cpl for dx, dy in gen for cpl in self.diffuse_empty_places(x + dx, y + dy, dx != 0 and dy != 0)),
+                (row, column),
+                *tuple(cpl for dx, dy in gen for cpl in self._spread_empty(row + dx, column + dy)),
             )
 
         else:
-            return ((x, y),)
+            return ((row, column),)
 
-    def create_board(self, initial_play: tuple[Row, Column] | None) -> BoardT:
-        board: BoardT = [[0 for _ in range(self.size[1])] for _ in range(self.size[0])]
+    def _create_board(self, initial_play: tuple[int, int] | None) -> BoardT:
+        board: BoardT = [[0 for _ in range(self._size[1])] for _ in range(self._size[0])]
 
         def increment_around(x: int, y: int):
             """Increment the value of the cells around the given position."""
 
             # I think this can be done in a more elegant way
             def incr(x: int, y: int):
-                if 0 <= x < self.size[0] and 0 <= y < self.size[1] and board[x][y] != -1:
+                if 0 <= x < self._size[0] and 0 <= y < self._size[1] and board[x][y] != -1:
                     board[x][y] += 1
 
             relative_positions: Iterable[tuple[int, int]] = cast(
@@ -151,24 +244,25 @@ class Minesweeper:
             for dx, dy in relative_positions:
                 incr(x + dx, y + dy)
 
-        positions = self.positions
+        positions_couples = {(x, y) for x in range(self._size[0]) for y in range(self._size[1])}
         if initial_play is not None:
-            positions -= {initial_play}
+            positions_couples -= {initial_play}
 
-        mines_pos = random.sample(list(positions), self.number_of_mines)
+        mines_pos = random.sample(list(positions_couples), self._mines_nb)
         for x, y in mines_pos:
             board[x][y] = -1
             increment_around(x, y)
 
         return board
 
+    # TODO: move this in an other place, like an example repertory.
     def display(self) -> None:
-        for x, row in enumerate(self._board):
+        for x, int in enumerate(self._board):
             special_repr = {
                 -1: "X",
                 0: " ",
             }
             print(
-                *(special_repr.get(case, case) if (x, y) in self.revealed else "■" for y, case in enumerate(row)),
+                *(special_repr.get(case, case) if (x, y) in self.revealed else "■" for y, case in enumerate(int)),
                 sep=" ",
             )
