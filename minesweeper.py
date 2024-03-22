@@ -6,7 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import chain, permutations
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Self, cast
 
 if TYPE_CHECKING:
     BoardT = list[list[int]]
@@ -153,8 +153,10 @@ class Minesweeper:
         """
         return {(x, y) for x in range(self._size[0]) for y in range(self._size[1]) if self._board[x][y] == -1}
 
-    def new(self, initial_play: tuple[int, int] | None = None):
+    def new(self, initial_play: tuple[int, int] | None = None) -> Self:
         """Create a new game, within the same configuration than provided at definition.
+
+        Alter the object in-place.
 
         Args:
             initial_play: a position that will be pre-played, ensuring no mine is here.
@@ -165,6 +167,8 @@ class Minesweeper:
         self._board: BoardT = self._create_board(initial_play)
         if initial_play is not None:
             self.play(*initial_play)
+
+        return self
 
     def _is_inside(self, x: int, y: int) -> bool:
         return 0 <= x < self._size[0] and 0 <= y < self._size[1]
@@ -281,6 +285,17 @@ class Minesweeper:
 
         last_play = self._history.pop()
         self._revealed.remove(last_play.positions[0])
+
+    def restart(self) -> Self:
+        """Restart a game, but with the same mines positions.
+
+        Alter the object in-place.
+        """
+        self._revealed = []
+        self._history = []
+        self.flags = []
+
+        return self
 
     # TODO: move this in an other place, like an example repertory.
     def display(self) -> None:
