@@ -6,7 +6,9 @@ from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import chain, permutations
-from typing import TYPE_CHECKING, Self, cast
+from typing import TYPE_CHECKING, cast
+
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     BoardT = list[list[int]]
@@ -227,7 +229,14 @@ class Minesweeper:
             raise ValueError("The given position is out of the board.")
 
         if (row, column) in self._revealed:
-            return Play(PlayType.NOTHING, ((row, column),))
+            value = self._board[row][column]
+            flagged = len(
+                [adj for adj in self._get_adjacent(row, column) if adj in self.mines_positions and adj in self.flags]
+            )
+            if value > 0 and flagged <= value:
+                pass
+            else:
+                return Play(PlayType.NOTHING, ((row, column),))
 
         if (row, column) in self.mines_positions:
             self._revealed.append((row, column))
@@ -242,6 +251,10 @@ class Minesweeper:
 
         self._history.append(play)
         return play
+
+    def _get_adjacent(self, row: int, column: int) -> Iterable[tuple[int, int]]:
+        for relative_row, relative_column in chain(permutations(range(-1, 2, 1), 2), ((1, 1), (-1, -1))):
+            yield row + relative_row, column + relative_column
 
     def _spread_empty(self, row: int, column: int) -> tuple[tuple[int, int], ...]:
         if (row, column) in self._revealed or not self._is_inside(row, column):
