@@ -57,6 +57,8 @@ class PlayType(Enum):
     SINGLE_NUMBER_REVEALED = auto()
     NOTHING = auto()
     CHORD = auto()
+    FLAG_ADDED = auto()
+    FLAG_REMOVED = auto()
 
 
 @dataclass(frozen=True)
@@ -173,7 +175,7 @@ class Minesweeper:
     def _is_inside(self, x: int, y: int) -> bool:
         return 0 <= x < self._size[0] and 0 <= y < self._size[1]
 
-    def toggle_flag(self, row: int, column: int) -> None:
+    def toggle_flag(self, row: int, column: int) -> Play:
         """Toggle the presence of a flag on a position.
 
         Raises:
@@ -182,13 +184,22 @@ class Minesweeper:
         Args:
             row: the row to toggle the flag at
             column: the column to toggle the flag at
+
+        Return:
+            A new `Play`.
         """
         if not self._is_inside(row, column):
             raise ValueError("Position out of bounds.")
 
         if (row, column) in self._revealed:
             self.flags.remove((row, column))
-        self.flags.append((row, column))
+            play = Play(PlayType.FLAG_REMOVED, ((row, column),))
+        else:
+            self.flags.append((row, column))
+            play = Play(PlayType.FLAG_REMOVED, ((row, column),))
+
+        self._history.append(play)
+        return play
 
     def play(self, row: int, column: int) -> Play:
         """Play at the given position.
