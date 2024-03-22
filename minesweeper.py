@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from collections.abc import Iterable
+from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum, auto
 from itertools import chain, permutations
@@ -52,12 +53,13 @@ class GameOver(Exception):
 
 class PlayType(Enum):
     BOMB_EXPLODED = auto()
-    EMPTY_SPOT = auto()
-    NUMBERED_SPOT = auto()
-    ALREADY_REVEALED = auto()
+    SPREADING = auto()
+    SINGLE_NUMBER_REVEALED = auto()
+    NOTHING = auto()
+    CHORD = auto()
 
 
-@dataclass
+@dataclass(frozen=True)
 class Play:
     type: PlayType
     positions: tuple[tuple[int, int], ...]
@@ -88,6 +90,11 @@ class Minesweeper:
         return cls((config.height, config.width), config.number_of_mines, config.initial_play)
 
     @property
+    def game_over(self) -> bool:
+        """True if the game is over (lose or win)."""
+        return self._history[-1].type == PlayType.BOMB_EXPLODED
+
+    @property
     def size(self) -> tuple[int, int]:
         """Get the size of the board. Can't be changed.
 
@@ -107,6 +114,11 @@ class Minesweeper:
         return self._mines_nb - len(self.flags)
 
     @property
+    def history(self):
+        """Return a oldest-to-newest list of `Play`."""
+        return deepcopy(self._history)
+
+    @property
     def board(self) -> BoardT:
         """A matrix representing the board.
 
@@ -122,7 +134,11 @@ class Minesweeper:
              [ 0,  0,  1, -1, -1]]
             ```
         """
-        return self._board
+        return deepcopy(self._board)
+
+    @property
+    def revealed(self):
+        return self._revealed.copy()
 
     @property
     def mines_positions(self) -> set[tuple[int, int]]:
@@ -143,8 +159,9 @@ class Minesweeper:
         Args:
             initial_play: a position that will be pre-played, ensuring no mine is here.
         """
-        self.revealed: list[tuple[int, int]] = []
+        self._revealed: list[tuple[int, int]] = []
         self.flags: list[tuple[int, int]] = []
+        self._history: list[Play] = []
         self._board: BoardT = self._create_board(initial_play)
         if initial_play is not None:
             self.play(*initial_play)
@@ -165,7 +182,7 @@ class Minesweeper:
         if not self._is_inside(row, column):
             raise ValueError("Position out of bounds.")
 
-        if (row, column) in self.revealed:
+        if (row, column) in self._revealed:
             self.flags.remove((row, column))
         self.flags.append((row, column))
 
@@ -194,26 +211,28 @@ class Minesweeper:
         if not self._is_inside(row, column):
             raise ValueError("The given position is out of the board.")
 
+        if (row, column) in self._revealed:
+            return Play(PlayType.NOTHING, ((row, column),))
+
         if (row, column) in self.mines_positions:
-            self.game_over = True
-            self.revealed.append((row, column))
-            return Play(PlayType.BOMB_EXPLODED, ((row, column),))
+            self._revealed.append((row, column))
+            play = Play(PlayType.BOMB_EXPLODED, ((row, column),))
 
-        if (row, column) in self.revealed:
-            return Play(PlayType.ALREADY_REVEALED, ((row, column),))
-
-        if self._board[row][column] == 0:
+        elif self._board[row][column] == 0:
             positions = self._spread_empty(row, column)
-            return Play(PlayType.EMPTY_SPOT, positions)
+            play = Play(PlayType.SPREADING, positions)
         else:
-            self.revealed.append((row, column))
-            return Play(PlayType.NUMBERED_SPOT, ((row, column),))
+            self._revealed.append((row, column))
+            play = Play(PlayType.SINGLE_NUMBER_REVEALED, ((row, column),))
+
+        self._history.append(play)
+        return play
 
     def _spread_empty(self, row: int, column: int) -> tuple[tuple[int, int], ...]:
-        if (row, column) in self.revealed or not self._is_inside(row, column):
+        if (row, column) in self._revealed or not self._is_inside(row, column):
             return ()
 
-        self.revealed.append((row, column))
+        self._revealed.append((row, column))
 
         if self._board[row][column] == 0:
             # This generate 8 tuples that represent the relative distance from the position with its adjacent positions.
@@ -255,6 +274,14 @@ class Minesweeper:
 
         return board
 
+    def undo(self):
+        """Cancel the last move if it was a bomb hit."""
+        if not self.game_over:
+            return
+
+        last_play = self._history.pop()
+        self._revealed.remove(last_play.positions[0])
+
     # TODO: move this in an other place, like an example repertory.
     def display(self) -> None:
         for x, int in enumerate(self._board):
@@ -263,6 +290,6 @@ class Minesweeper:
                 0: " ",
             }
             print(
-                *(special_repr.get(case, case) if (x, y) in self.revealed else "■" for y, case in enumerate(int)),
+                *(special_repr.get(case, case) if (x, y) in self._revealed else "■" for y, case in enumerate(int)),
                 sep=" ",
             )
