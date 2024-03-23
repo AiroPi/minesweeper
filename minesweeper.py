@@ -54,9 +54,8 @@ class GameOver(Exception):
 
 
 class PlayType(Enum):
-    BOMB_EXPLODED = auto()
     SPREADING = auto()
-    SINGLE_NUMBER_REVEALED = auto()
+    POSITION_REVEALED = auto()
     NOTHING = auto()
     CHORD = auto()
     FLAG_ADDED = auto()
@@ -67,6 +66,7 @@ class PlayType(Enum):
 class Play:
     type: PlayType
     positions: tuple[tuple[int, int], ...]
+    bomb_exploded: bool = False
 
 
 class Minesweeper:
@@ -96,7 +96,7 @@ class Minesweeper:
     @property
     def game_over(self) -> bool:
         """True if the game is over (lose or win)."""
-        return self._history[-1].type == PlayType.BOMB_EXPLODED
+        return bool(self._history) and self._history[-1].bomb_exploded
 
     @property
     def size(self) -> tuple[int, int]:
@@ -193,7 +193,7 @@ class Minesweeper:
         if not self._is_inside(row, column):
             raise ValueError("Position out of bounds.")
 
-        if (row, column) in self._revealed:
+        if (row, column) in self.flags:
             self.flags.remove((row, column))
             play = Play(PlayType.FLAG_REMOVED, ((row, column),))
         else:
@@ -203,7 +203,7 @@ class Minesweeper:
         self._history.append(play)
         return play
 
-    def play(self, row: int, column: int) -> Play:
+    def play(self, row: int, column: int, from_chord: bool = False) -> Play:
         """Play at the given position.
 
         If the position contains a flag, it is ignored.
@@ -214,6 +214,7 @@ class Minesweeper:
         Args:
             row: the row to play at
             column: the column to play at
+            chord_mode: only used for recursive reason (play not added to history)
 
         Raises:
             GameOver: if you try to play on a overed game
@@ -228,33 +229,43 @@ class Minesweeper:
         if not self._is_inside(row, column):
             raise ValueError("The given position is out of the board.")
 
+        if (row, column) in self.flags:
+            return Play(PlayType.NOTHING, ((row, column),))
+
         if (row, column) in self._revealed:
             value = self._board[row][column]
-            flagged = len(
-                [adj for adj in self._get_adjacent(row, column) if adj in self.mines_positions and adj in self.flags]
-            )
-            if value > 0 and flagged <= value:
-                pass
+            flagged = len([adj for adj in self._get_adjacent(row, column) if adj in self.flags])
+            if value > 0 and value <= flagged and not from_chord:
+                l_positions: list[tuple[int, int]] = []
+                bomb_exploded = False
+                for a_row, a_column in self._get_adjacent(row, column):
+                    play = self.play(a_row, a_column, from_chord=True)
+                    if play.type != PlayType.NOTHING:
+                        l_positions.extend(play.positions)
+                    bomb_exploded = bomb_exploded or play.bomb_exploded
+                play = Play(PlayType.CHORD, tuple(l_positions), bomb_exploded=bomb_exploded)
             else:
                 return Play(PlayType.NOTHING, ((row, column),))
 
         if (row, column) in self.mines_positions:
             self._revealed.append((row, column))
-            play = Play(PlayType.BOMB_EXPLODED, ((row, column),))
+            play = Play(PlayType.POSITION_REVEALED, ((row, column),), bomb_exploded=True)
 
         elif self._board[row][column] == 0:
             positions = self._spread_empty(row, column)
             play = Play(PlayType.SPREADING, positions)
         else:
             self._revealed.append((row, column))
-            play = Play(PlayType.SINGLE_NUMBER_REVEALED, ((row, column),))
+            play = Play(PlayType.POSITION_REVEALED, ((row, column),))
 
-        self._history.append(play)
+        if not from_chord:
+            self._history.append(play)
         return play
 
     def _get_adjacent(self, row: int, column: int) -> Iterable[tuple[int, int]]:
         for relative_row, relative_column in chain(permutations(range(-1, 2, 1), 2), ((1, 1), (-1, -1))):
-            yield row + relative_row, column + relative_column
+            if self._is_inside(x := row + relative_row, y := column + relative_column):
+                yield x, y
 
     def _spread_empty(self, row: int, column: int) -> tuple[tuple[int, int], ...]:
         if (row, column) in self._revealed or not self._is_inside(row, column):
@@ -320,15 +331,3 @@ class Minesweeper:
         self.flags = []
 
         return self
-
-    # TODO: move this in an other place, like an example repertory.
-    def display(self) -> None:
-        for x, int in enumerate(self._board):
-            special_repr = {
-                -1: "X",
-                0: " ",
-            }
-            print(
-                *(special_repr.get(case, case) if (x, y) in self._revealed else "■" for y, case in enumerate(int)),
-                sep=" ",
-            )
