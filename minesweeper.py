@@ -13,13 +13,7 @@ from typing_extensions import Self
 if TYPE_CHECKING:
     BoardT = list[list[int]]
 
-__all__ = [
-    "MinesweeperConfig",
-    "Minesweeper",
-    "Play",
-    "GameOver",
-    "PlayType",
-]
+__all__ = ["MinesweeperConfig", "Minesweeper", "Play", "GameOver", "PlayType", "GameState"]
 
 
 @dataclass
@@ -51,6 +45,12 @@ class MinesweeperConfig:
 
 class GameOver(Exception):
     """You tried to play while the game is over."""
+
+
+class GameState(Enum):
+    LOST = auto()
+    WON = auto()
+    IN_PROGRESS = auto()
 
 
 class PlayType(Enum):
@@ -94,9 +94,19 @@ class Minesweeper:
         return cls((config.height, config.width), config.number_of_mines, config.initial_play)
 
     @property
+    def state(self) -> GameState:
+        """Describe the current state of the game."""
+        if set(self.flags) == set(self.mines_positions):
+            return GameState.WON
+        if self._history and self._history[-1].bomb_exploded:
+            return GameState.LOST
+        else:
+            return GameState.IN_PROGRESS
+
+    @property
     def game_over(self) -> bool:
         """True if the game is over (lose or win)."""
-        return bool(self._history) and self._history[-1].bomb_exploded
+        return self.state != GameState.IN_PROGRESS
 
     @property
     def size(self) -> tuple[int, int]:

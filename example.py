@@ -1,4 +1,4 @@
-from minesweeper import Minesweeper
+from minesweeper import GameState, Minesweeper
 
 game = Minesweeper((10, 10), 10)
 
@@ -33,6 +33,10 @@ while True:
     display()
     if game.game_over:
         print("Game Over !")
+        if game.state == GameState.LOST:
+            print("You lost!")
+        else:
+            print("You won!")
         match input("What next ? u for undo, n for new\n"):
             case "n":
                 init()
