@@ -7,25 +7,19 @@ on:
 
 jobs:
   check:
-    name: Run checks with ${{ matrix.python-version }}
+    name: Run tox with ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install uv
-        uses: astral-sh/setup-uv@v2
-        with:
-            version: 0.5.16
-      - name: Set up CPython ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Install latest version of uv
+        uses: astral-sh/setup-uv@v5
       - name: Install tox
-        run: uv sync --only-group tox-gh --frozen
-      - name: Run Tox
-        run: tox
+        run: uv sync --only-group tox --frozen --python 3.13
+      - name: Run tox for python ${{ matrix.python-version }}
+        run: uv run tox -e py${{ matrix.python-version }}

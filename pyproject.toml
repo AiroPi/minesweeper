@@ -34,7 +34,6 @@ dev = [
 ]
 lint = ["pyright", "ruff"]
 tox = ["tox", "tox-uv"]
-tox-gh = ["tox-gh", { include-group = "tox" }]
 test = ["pytest"]
 
 
@@ -61,14 +60,6 @@ commands = [
     ["ruff", "check", "."],
     ["pyright", "."],
 ]
-
-[tool.tox.gh.python]
-"3.13" = ["3.13"]
-"3.12" = ["3.12"]
-"3.11" = ["3.11"]
-"3.10" = ["3.11"]
-"3.9" = ["3.11"]
-"3.8" = ["3.11"]
 
 
 # https://docs.astral.sh/ruff/
