@@ -13,7 +13,7 @@ from typing_extensions import Self
 if TYPE_CHECKING:
     BoardT = list[list[int]]
 
-__all__ = ["MinesweeperConfig", "Minesweeper", "Play", "GameOver", "PlayType", "GameState"]
+__all__ = ["GameOver", "GameState", "Minesweeper", "MinesweeperConfig", "Play", "PlayType"]
 
 
 @dataclass

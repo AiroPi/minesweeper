@@ -1,3 +1,4 @@
+# https://docs.astral.sh/uv/concepts/projects/config/#configuring-projects
 [project]
 name = "minesweeper"
 version = "1.1.0"
@@ -6,52 +7,77 @@ authors = [{ name = "AiroPi", email = "pi@airopi.dev" }]
 description = "A python minesweeper."
 readme = "README.md"
 classifiers = []
-dynamic = ["dependencies"]
+dependencies = ["typing_extensions"]
 
 [project.urls]
 Homepage = "https://github.com/airopi/minesweeper"
 Issues = "https://github.com/airopi/minesweeper/issues"
 
+# https://hatch.pypa.io/latest/
 [build-system]
-requires = ["hatchling", "hatch-requirements-txt"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.metadata.hooks.requirements_txt]
-files = ["requirements.txt"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "minesweeper.py" = "minesweeper/__init__.py"
 "py.typed" = "minesweeper/py.typed"
-"example.py" = "minesweeper/__main__.py"
+"main.py" = "minesweeper/__main__.py"
 
+
+# https://docs.astral.sh/uv/concepts/projects/dependencies/#development-dependencies
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "tox" },
+    { include-group = "test" },
+]
+lint = ["pyright", "ruff"]
+tox = ["tox", "tox-uv"]
+tox-gh = ["tox-gh", { include-group = "tox" }]
+test = ["pytest"]
+
+
+# https://microsoft.github.io/pyright/#/
+[tool.pyright]
+typeCheckingMode = "strict"
+
+
+# https://tox.wiki/en/latest/
 [tool.tox]
-legacy_tox_ini = """
-[tox]
-env_list = py{38,39,310,311,312}
+envlist = ["py38", "py39", "py310", "py311", "py312", "py313"]
 
-[testenv]
-deps =
-    -r requirements.txt
-    -r requirements.dev.txt
-commands =
-    pytest
-    ruff format --check minesweeper.py
-    ruff check minesweeper.py
-    pyright minesweeper.py
+[tool.tox.env_run_base]
+runner = "uv-venv-lock-runner"
+description = "run all checks on the code"
+dependency_groups = ["dev", "test"]
+allowlist_externals = ["which"]
+commands = [
+    #fmt
+    ["python", "--version"],
+    ["which", "ruff"],
+    ["pytest"],
+    ["ruff", "format", "--check", "."],
+    ["ruff", "check", "."],
+    ["pyright", "."],
+]
 
-[gh]
-python =
-    3.12 = py312
-    3.11 = py311
-    3.10 = py310
-    3.9 = py39
-    3.8 = py38
-"""
+[tool.tox.gh.python]
+"3.13" = ["3.13"]
+"3.12" = ["3.12"]
+"3.11" = ["3.11"]
+"3.10" = ["3.11"]
+"3.9" = ["3.11"]
+"3.8" = ["3.11"]
 
+
+# https://docs.astral.sh/ruff/
 [tool.ruff]
 line-length = 120
 indent-width = 4
 target-version = "py38"
+src = ["src"]
+exclude = ["bin"]
 
 [tool.ruff.lint]
 select = [
@@ -90,10 +116,11 @@ select = [
     # "DTZ",   # flake8-datetimez (TODO)
     # "B",     # flake8-bugbear
 ]
+
 ignore = [
-    "E501",   # line too long (we relate on the formater)
-    "N818",   # Error suffix for exceptions names
-    "PIE796", # Enum contains duplicate value
+    "E501", # line too long (we relate on the formater)
+    "N818", # Error suffix for exceptions names
+    # "PIE796", # Enum contains duplicate value
     "TRY003", # Avoid specifying long messages outsides the exception class
     "ISC001", # To avoid conflicts with the formatter
 ]
