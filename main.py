@@ -27,28 +27,33 @@ def init():
     game.new((row, column))
 
 
-display()
-init()
-while True:
+def main():
     display()
-    if game.game_over:
-        print("Game Over !")
-        if game.state == GameState.LOST:
-            print("You lost!")
-        else:
-            print("You won!")
-        match input("What next ? u for undo, n for new\n"):
-            case "n":
-                init()
-            case "u":
-                game.undo()
-            case _:
-                print("Invalid response, new game created.")
-                init()
+    init()
+    while True:
         display()
-    r = input("Where do you want to play ? e.g. '0,0' or 'f0,0' for flag.\n")
-    column, row = r.split(",")
-    if flag := column.startswith("f"):
-        game.toggle_flag(int(row), int(column[1:]))
-    else:
-        game.play(int(row), int(column))
+        if game.game_over:
+            print("Game Over !")
+            if game.state == GameState.LOST:
+                print("You lost!")
+            else:
+                print("You won!")
+            match input("What next ? u for undo, n for new\n"):
+                case "n":
+                    init()
+                case "u":
+                    game.undo()
+                case _:
+                    print("Invalid response, new game created.")
+                    init()
+            display()
+        r = input("Where do you want to play ? e.g. '0,0' or 'f0,0' for flag.\n")
+        column, row = r.split(",")
+        if column.startswith("f"):
+            game.toggle_flag(int(row), int(column[1:]))
+        else:
+            game.play(int(row), int(column))
+
+
+if __name__ == "__main__":
+    main()

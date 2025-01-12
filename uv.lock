@@ -109,13 +109,6 @@ tox = [
     { name = "tox-uv", version = "1.13.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "tox-uv", version = "1.17.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
-tox-gh = [
-    { name = "tox" },
-    { name = "tox-gh", version = "1.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "tox-gh", version = "1.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "tox-uv", version = "1.13.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "tox-uv", version = "1.17.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-]
 
 [package.metadata]
 requires-dist = [{ name = "typing-extensions" }]
@@ -135,11 +128,6 @@ lint = [
 test = [{ name = "pytest" }]
 tox = [
     { name = "tox" },
-    { name = "tox-uv" },
-]
-tox-gh = [
-    { name = "tox" },
-    { name = "tox-gh" },
     { name = "tox-uv" },
 ]
 
@@ -306,36 +294,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1f/86/32b10f91b4b975a37ac402b0f9fa016775088e0565c93602ba0b3c729ce8/tox-4.23.2.tar.gz", hash = "sha256:86075e00e555df6e82e74cfc333917f91ecb47ffbc868dcafbd2672e332f4a2c", size = 189998 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/af/c0/124b73d01c120e917383bc6c53ebc34efdf7243faa9fca64d105c94cf2ab/tox-4.23.2-py3-none-any.whl", hash = "sha256:452bc32bb031f2282881a2118923176445bac783ab97c874b8770ab4c3b76c38", size = 166758 },
-]
-
-[[package]]
-name = "tox-gh"
-version = "1.4.1"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.9'",
-]
-dependencies = [
-    { name = "tox", marker = "python_full_version < '3.9'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/0d/da6887cfc43cf120dfe2bdbbd0787fa13007a7f448daa4480175cb705cdf/tox_gh-1.4.1.tar.gz", hash = "sha256:da422beccbdc5ad5994fe8faf6c193f2d794e957628b052ba23e7fcf9e2e340f", size = 7530 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/1b/2bfec12862f2c07ad6d84bd8e29ff563cb5937d781584683cf4b78f59e8a/tox_gh-1.4.1-py3-none-any.whl", hash = "sha256:005b33d16eef1bd1dae9f7d8b3cef53374af7d475f9c9c33ef098247741fb694", size = 6665 },
-]
-
-[[package]]
-name = "tox-gh"
-version = "1.4.4"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.9'",
-]
-dependencies = [
-    { name = "tox", marker = "python_full_version >= '3.9'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6d/9e/d621445f447751b5211b0d533ab2585dcf2d1310518c43d5d702d31a008c/tox_gh-1.4.4.tar.gz", hash = "sha256:4ea585f66585b90f5826b1677cfc9453747792a0f9ff83d468603bc17556e07b", size = 7615 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ac/3e/3c5c71f37a9f542789e9cae49bf840f8ae1be6b28d3dd7882fbb9a39833e/tox_gh-1.4.4-py3-none-any.whl", hash = "sha256:b962e0f8c4619e98d11c2a135939876691e148b843b7dac4cff7de1dc4f7c215", size = 6771 },
 ]
 
 [[package]]

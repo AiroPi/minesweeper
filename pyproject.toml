@@ -13,6 +13,9 @@ dependencies = ["typing_extensions"]
 Homepage = "https://github.com/airopi/minesweeper"
 Issues = "https://github.com/airopi/minesweeper/issues"
 
+[project.scripts]
+minesweeper = "minesweeper.__main__:main"
+
 # https://hatch.pypa.io/latest/
 [build-system]
 requires = ["hatchling"]
