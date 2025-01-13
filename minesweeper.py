@@ -99,9 +99,7 @@ class Minesweeper:
     @property
     def state(self) -> GameState:
         """Describe the current state of the game."""
-        if set(self.flags) == self.mines_positions and set(self.revealed) == (
-            set(self.all_positions) - self.mines_positions
-        ):
+        if set(self.revealed) == (set(self.all_positions) - self.mines_positions):
             return GameState.WON
         if self._history and self._history[-1].bomb_exploded:
             return GameState.LOST

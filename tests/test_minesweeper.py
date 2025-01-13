@@ -91,6 +91,20 @@ def test_win(game: minesweeper.Minesweeper):
     assert game.game_over is True
 
 
+def test_win_but_not_all_flagged(game: minesweeper.Minesweeper):
+    game.toggle_flag(1, 2)
+    game.toggle_flag(2, 1)
+    game.toggle_flag(4, 0)
+    game.toggle_flag(3, 4)
+    game.play(0, 0)
+    game.play(0, 2)
+    game.play(3, 1)
+    game.play(3, 1)  # use chord
+    game.play(2, 3)
+    game.play(2, 3)  # use chord
+    assert game.game_over is True
+
+
 def test_no_play_after_win(game: minesweeper.Minesweeper):
     win_position(game)
     with pytest.raises(minesweeper.GameOver):
