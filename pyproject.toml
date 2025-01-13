@@ -1,7 +1,7 @@
 # https://docs.astral.sh/uv/concepts/projects/config/#configuring-projects
 [project]
 name = "minesweeper"
-version = "1.2.1"
+version = "1.2.2"
 requires-python = ">=3.8"
 authors = [{ name = "AiroPi", email = "pi@airopi.dev" }]
 description = "A python minesweeper."

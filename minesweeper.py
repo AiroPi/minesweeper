@@ -295,11 +295,9 @@ class Minesweeper:
             bomb_exploded = False
             for a_row, a_column in self._get_adjacent(row, column):
                 play = self._play(a_row, a_column, from_chord=True)
-                print(play)
                 if play.type != PlayType.NOTHING:
                     l_positions.extend(play.positions)
                 bomb_exploded = bomb_exploded or play.bomb_exploded
-            print(bomb_exploded)
             return Play(PlayType.CHORD, tuple(l_positions), bomb_exploded=bomb_exploded)
         else:
             return Play(PlayType.NOTHING, ((row, column),))
